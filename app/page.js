@@ -36,68 +36,118 @@ export default function Page() {
       },
       body: JSON.stringify({ installmentId, debtId })
     })
-    load()
+
+    load() // 🔥 update langsung setelah bayar
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   return (
-    <div style={{padding:20}}>
+    <div style={{ padding: 20 }}>
 
-      <h2>Total: Rp{summary.total_all}</h2>
-      <h3>Sisa: Rp{summary.total_remaining}</h3>
+      <h2>Total: Rp{summary.total_all || 0}</h2>
+      <h3>Sisa: Rp{summary.total_remaining || 0}</h3>
 
-      <input placeholder="Cicilan per bulan"
-        onChange={e => setForm({...form, installmentAmount:Number(e.target.value)})}/>
+      {/* FORM INPUT */}
+      <div style={{ marginBottom: 10 }}>
+        <input
+          placeholder="Cicilan per bulan"
+          onChange={e => setForm({
+            ...form,
+            installmentAmount: Number(e.target.value)
+          })}
+        />
 
-      <input placeholder="Tenor"
-        onChange={e => setForm({...form, tenor:Number(e.target.value)})}/>
+        <input
+          placeholder="Tenor"
+          onChange={e => setForm({
+            ...form,
+            tenor: Number(e.target.value)
+          })}
+        />
 
-      <input placeholder="Tanggal (1-28)"
-        onChange={e => setForm({...form, dayOfMonth:Number(e.target.value)})}/>
+        <input
+          placeholder="Tanggal (1-28)"
+          onChange={e => setForm({
+            ...form,
+            dayOfMonth: Number(e.target.value)
+          })}
+        />
 
-      <button onClick={() => {
-        add({
-          installmentAmount: form.installmentAmount,
-          tenor: form.tenor,
-          dayOfMonth: form.dayOfMonth || 1,
-          startDate: new Date().toISOString()
-        })
-      }}>
-        Tambah
-      </button>
+        <button onClick={() => {
+          add({
+            installmentAmount: form.installmentAmount,
+            tenor: form.tenor,
+            dayOfMonth: form.dayOfMonth || 1,
+            startDate: new Date().toISOString()
+          })
+        }}>
+          Tambah
+        </button>
+      </div>
 
-      {data.map(d => {
-        const sisa = d.total_amount - (d.installment_amount * d.paid_count)
+      {/* 🔥 TABEL UTAMA */}
+      <table border="1" cellPadding="5" style={{ marginTop: 20 }}>
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Cicilan</th>
+            <th>Tenor</th>
+            <th>Total</th>
+            <th>Sisa</th>
+            <th>Tanggal</th>
+            <th>Notif Keluar</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
 
-        return (
-          <div key={d.id} style={{border:'1px solid #ccc', margin:10, padding:10}}>
+        <tbody>
+          {data.map(d => {
+            const sudahDibayar = d.installment_amount * d.paid_count
+            const sisa = d.total_amount - sudahDibayar
 
-            <b>{d.name}</b><br/>
-            Cicilan: Rp{d.installment_amount}<br/>
-            Tenor: {d.tenor}<br/>
-            Total: Rp{d.total_amount}<br/>
-            Sisa: Rp{sisa}<br/>
-            Tanggal: tiap {new Date(d.installments[0]?.due_date).getDate()}<br/>
+            const tanggal = d.installments[0]
+              ? new Date(d.installments[0].due_date).getDate()
+              : '-'
 
-            {d.installments.map(i => (
-              <div key={i.id}>
-                {new Date(i.due_date).toLocaleDateString()}
-                - Rp{i.amount}
+            const next = d.installments.find(i => !i.is_paid)
 
-                {!i.is_paid && (
-                  <button onClick={() => pay(i.id, d.id)}>
-                    Bayar
-                  </button>
-                )}
+            return (
+              <tr key={d.id}>
+                <td>{d.name}</td>
+                <td>Rp{d.installment_amount}</td>
+                <td>{d.tenor}</td>
+                <td>Rp{d.total_amount}</td>
 
-                {i.is_paid && ' ✅'}
-              </div>
-            ))}
+                {/* 🔥 SISA */}
+                <td style={{ color: sisa > 0 ? 'red' : 'green' }}>
+                  Rp{sisa}
+                </td>
 
-          </div>
-        )
-      })}
+                <td>{tanggal}</td>
+
+                <td>
+                  {next
+                    ? new Date(next.due_date).toLocaleDateString()
+                    : 'Lunas'}
+                </td>
+
+                <td>
+                  {next ? (
+                    <button onClick={() => pay(next.id, d.id)}>
+                      Bayar
+                    </button>
+                  ) : (
+                    '✔'
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
 
     </div>
   )
