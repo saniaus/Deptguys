@@ -1,4 +1,4 @@
-import { getDB } from '@/lib/db'
+import { getDB } from '../../../lib/db'
 
 export async function POST(req) {
   const db = getDB()
