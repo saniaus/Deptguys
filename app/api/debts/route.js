@@ -1,5 +1,5 @@
-import { getDB } from '@/lib/db'
-import { generateInstallments } from '@/lib/utils'
+import { getDB } from '../../../lib/db'
+import { generateInstallments } from '../../../lib/utils'
 
 export async function GET() {
   const db = getDB()
