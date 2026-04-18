@@ -3,12 +3,7 @@ import { generateInstallments } from '../../../lib/utils'
 
 export async function GET() {
   const db = getDB()
-
-  const { data } = await db
-    .from('debts')
-    .select('*, installments(*)')
-    .order('created_at', { ascending: false })
-
+  const { data } = await db.from('debts').select('*, installments(*)')
   return Response.json(data || [])
 }
 
@@ -16,30 +11,24 @@ export async function POST(req) {
   const db = getDB()
   const body = await req.json()
 
-  if (!body.name || !body.totalAmount || !body.tenor) {
-    return new Response('Invalid input', { status: 400 })
-  }
+  const totalAmount = body.installmentAmount * body.tenor
 
-  const installmentAmount = Math.ceil(body.totalAmount / body.tenor)
-
-  const { data: debt, error } = await db
+  const { data: debt } = await db
     .from('debts')
     .insert({
-      name: body.name,
-      total_amount: body.totalAmount,
-      installment_amount: installmentAmount,
+      name: 'Cicilan',
+      total_amount: totalAmount,
+      installment_amount: body.installmentAmount,
       tenor: body.tenor
     })
     .select()
     .single()
 
-  if (error) return new Response(error.message, { status: 500 })
-
   const installments = generateInstallments(
     body.startDate,
     body.dayOfMonth,
     body.tenor,
-    installmentAmount
+    body.installmentAmount
   ).map(i => ({
     ...i,
     debt_id: debt.id
@@ -47,5 +36,12 @@ export async function POST(req) {
 
   await db.from('installments').insert(installments)
 
+  return Response.json({ ok: true })
+}
+
+export async function DELETE(req) {
+  const db = getDB()
+  const { id } = await req.json()
+  await db.from('debts').delete().eq('id', id)
   return Response.json({ ok: true })
 }
