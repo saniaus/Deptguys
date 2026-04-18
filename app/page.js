@@ -1,48 +1,108 @@
-<div style={{ marginBottom: 10 }}>
+'use client'
+import { useEffect, useState } from 'react'
 
-  <input
-    placeholder="Nama"
-    onChange={e => setForm({
-      ...form,
-      name: e.target.value
-    })}
-  />
+const KEY = process.env.NEXT_PUBLIC_ADMIN_KEY
 
-  <input
-    placeholder="Cicilan per bulan"
-    onChange={e => setForm({
-      ...form,
-      installmentAmount: Number(e.target.value)
-    })}
-  />
+export default function Page() {
+  const [data, setData] = useState([])
+  const [form, setForm] = useState({})
 
-  <input
-    placeholder="Tenor"
-    onChange={e => setForm({
-      ...form,
-      tenor: Number(e.target.value)
-    })}
-  />
+  async function load() {
+    const d = await fetch('/api/debts').then(r => r.json())
+    setData(d)
+  }
 
-  <input
-    placeholder="Tanggal (1-28)"
-    onChange={e => setForm({
-      ...form,
-      dayOfMonth: Number(e.target.value)
-    })}
-  />
-
-  <button onClick={() => {
-    add({
-      name: form.name, // 🔥 sekarang pakai input user
-      installmentAmount: form.installmentAmount,
-      tenor: form.tenor,
-      totalAmount: form.installmentAmount * form.tenor,
-      dayOfMonth: form.dayOfMonth || 1,
-      startDate: new Date().toISOString()
+  async function add() {
+    await fetch('/api/debts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': KEY
+      },
+      body: JSON.stringify(form)
     })
-  }}>
-    Tambah
-  </button>
+    load()
+  }
 
-</div>
+  async function pay(id, amount) {
+    await fetch('/api/pay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': KEY
+      },
+      body: JSON.stringify({ id, amount })
+    })
+    load()
+  }
+
+  async function del(id) {
+    await fetch('/api/debts', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': KEY
+      },
+      body: JSON.stringify({ id })
+    })
+    load()
+  }
+
+  useEffect(() => { load() }, [])
+
+  return (
+    <div style={{padding:20}}>
+
+      <h2>Data Hutang</h2>
+
+      {/* FORM */}
+      <input placeholder="Nama"
+        onChange={e => setForm({...form, name:e.target.value})} />
+
+      <input placeholder="Total Hutang"
+        onChange={e => setForm({...form, total:Number(e.target.value)})} />
+
+      <input type="date"
+        onChange={e => setForm({...form, due_date:e.target.value})} />
+
+      <button onClick={add}>Tambah</button>
+
+      {/* TABEL */}
+      <table border="1" cellPadding="5">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Total</th>
+            <th>Sisa</th>
+            <th>Jatuh Tempo</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {data.map(d => (
+            <tr key={d.id}>
+              <td>{d.name}</td>
+              <td>Rp{d.total}</td>
+              <td style={{color:d.remaining > 0 ? 'red':'green'}}>
+                Rp{d.remaining}
+              </td>
+              <td>{new Date(d.due_date).toLocaleDateString()}</td>
+
+              <td>
+                <button onClick={() => pay(d.id, 100000)}>
+                  Bayar 100rb
+                </button>
+
+                <button onClick={() => del(d.id)}>
+                  Hapus
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+    </div>
+  )
+}
