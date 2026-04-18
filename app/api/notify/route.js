@@ -1,6 +1,6 @@
-import { getDB } from '@/lib/db'
-import { diffDays } from '@/lib/utils'
-import { sendTelegram } from '@/lib/telegram'
+import { getDB } from '../../../lib/db'
+import { diffDays } from '../../../lib/utils'
+import { sendTelegram } from '../../../lib/telegram'
 
 export async function GET() {
   const db = getDB()
