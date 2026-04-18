@@ -2,25 +2,19 @@ import { getDB } from '../../../lib/db'
 
 export async function POST(req) {
   const db = getDB()
-  const { installmentId, debtId } = await req.json()
+  const { id, amount } = await req.json()
 
   const { data } = await db
-    .from('installments')
+    .from('debts')
     .select('*')
-    .eq('id', installmentId)
+    .eq('id', id)
     .single()
 
-  if (!data || data.is_paid) {
-    return new Response('Already paid', { status: 400 })
-  }
+  const newRemaining = Math.max(0, data.remaining - amount)
 
-  await db.from('installments')
-    .update({ is_paid: true })
-    .eq('id', installmentId)
+  await db.from('debts')
+    .update({ remaining: newRemaining })
+    .eq('id', id)
 
-  await db.rpc('increment_paid', {
-    debt_id_input: debtId
-  })
-
-  return Response.json({ ok: true })
+  return Response.json({ ok:true })
 }
