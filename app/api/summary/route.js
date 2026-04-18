@@ -9,9 +9,8 @@ export async function GET() {
 
   for (const d of data || []) {
     total_all += d.total_amount
-    total_remaining += Math.max(
-      0,
-      d.total_amount - d.installment_amount * d.paid_count
+    total_remaining += (
+      d.total_amount - (d.installment_amount * d.paid_count)
     )
   }
 
